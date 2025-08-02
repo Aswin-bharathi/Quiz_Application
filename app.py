@@ -11,6 +11,7 @@ import requests
 import logging
 from docx import Document
 from docx.shared import Inches
+import webbrowser
 
 app = Flask(__name__)
 app.secret_key = 'intercollege_event_2025'
@@ -667,4 +668,5 @@ def track_tab_switch():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
+    webbrowser.open(f'http://127.0.0.1:5000/admin_login')
     app.run(debug=True, port=port, host="0.0.0.0")
