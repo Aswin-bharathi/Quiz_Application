@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Show Questions</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .sidebar {
+            transition: all 0.3s ease-in-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 256px; /* w-64 = 256px, matching View Results */
+            padding: 28px 8px; /* py-7 px-2 = 28px 8px, matching View Results */
+            box-sizing: border-box;
+        }
+        .sidebar h2 {
+            padding: 0;
+            margin: 0;
+            font-size: 1.5rem; /* Consistent with View Results */
+        }
+        .sidebar-link {
+            font-size: 1rem;
+            padding: 10px 16px; /* py-2.5 px-4 = 10px 16px, matching View Results */
+        }
+        .sidebar-link:hover {
+            background-color: #4a5568;
+        }
+        .content {
+            margin-left: 256px; /* Matching sidebar width for alignment */
+            padding: 32px; /* p-8 = 32px, matching View Results */
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+        .questions-table {
+            overflow-y: visible;
+        }
+        .actions-column {
+            min-width: 100px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto; /* Matching View Results */
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f3f4f6;
+        }
+        .filter-dropdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .content {
+                margin-left: 0;
+            }
+            .filter-dropdown {
+                position: static;
+                margin-top: 10px;
+            }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.createElement('button');
+            toggleBtn.innerHTML = '☰';
+            toggleBtn.className = 'fixed top-4 left-4 text-white bg-gray-800 p-2 rounded-md md:hidden z-50';
+            toggleBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+            document.body.appendChild(toggleBtn);
+
+            const filterSelect = document.querySelector('#quiz-type-filter');
+            filterSelect.addEventListener('change', function() {
+                const quizType = this.value;
+                const url = new URL(window.location);
+                if (quizType === 'all') {
+                    url.searchParams.delete('quiz_type');
+                } else {
+                    url.searchParams.set('quiz_type', quizType);
+                }
+                window.location.href = url.toString();
+            });
+        });
+    </script>
+</head>
+<body class="font-sans bg-gray-50">
+    <div class="flex h-screen">
+        <div class="sidebar bg-gray-800 text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 left-0 transform md:relative md:translate-x-0 transition duration-200 ease-in-out">
+            <h2 class="text-2xl font-bold text-center">Quiz Admin</h2>
+            <nav>
+                <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Dashboard</a>
+                <a href="{{ url_for('add_team') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Add Team</a>
+                <a href="{{ url_for('show_teams') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Show Teams</a>
+                <a href="{{ url_for('sync_teams') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Sync Teams</a>
+                <a href="{{ url_for('add_question') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Add Question</a>
+                <a href="{{ url_for('show_questions') }}" class="block py-2.5 px-4 rounded sidebar-link bg-gray-700">Show Questions</a>
+                <a href="{{ url_for('upload_questions') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Upload Questions</a>
+                <a href="{{ url_for('set_entry_code') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Set Entry Code</a>
+                <a href="{{ url_for('view_results') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">View Results</a>
+                <a href="{{ url_for('admin_logout') }}" class="block py-2.5 px-4 rounded sidebar-link hover:bg-gray-700">Logout</a>
+            </nav>
+        </div>
+        <div class="flex-1 p-8 bg-gradient-to-br from-gray-50 to-blue-50 content">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800 fade-in">Questions</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="bg-{{ 'red' if category == 'error' else 'green' }}-100 border-{{ 'red' if category == 'error' else 'green' }}-400 text-{{ 'red' if category == 'error' else 'green' }}-700 px-4 py-3 rounded-lg mb-6 shadow-sm fade-in">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <div class="relative">
+                <div class="filter-dropdown">
+                    <select id="quiz-type-filter" class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900">
+                        <option value="all" {% if request.args.get('quiz_type') == None or request.args.get('quiz_type') == 'all' %}selected{% endif %}>All</option>
+                        <option value="Tech" {% if request.args.get('quiz_type') == 'Tech' %}selected{% endif %}>Tech</option>
+                        <option value="Software" {% if request.args.get('quiz_type') == 'Software' %}selected{% endif %}>Software</option>
+                    </select>
+                </div>
+                <br><br><br>
+                <div class="bg-white p-6 rounded-lg shadow-md fade-in mt-2">
+                    <div class="questions-table">
+                        <table class="w-full border-collapse border table-auto">
+                            <thead>
+                                <tr class="bg-gray-200">
+                                    <th class="border p-2">Quiz Type</th>
+                                    <th class="border p-2">Question</th>
+                                    <th class="border p-2">Option 1</th>
+                                    <th class="border p-2">Option 2</th>
+                                    <th class="border p-2">Option 3</th>
+                                    <th class="border p-2">Option 4</th>
+                                    <th class="border p-2">Answer</th>
+                                    <th class="border p-2 actions-column">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for question in questions %}
+                                    <tr>
+                                        <td class="border p-2">{{ question[1] }}</td>
+                                        <td class="border p-2">{{ question[2] }}</td>
+                                        <td class="border p-2">{{ question[3] }}</td>
+                                        <td class="border p-2">{{ question[4] }}</td>
+                                        <td class="border p-2">{{ question[5] }}</td>
+                                        <td class="border p-2">{{ question[6] }}</td>
+                                        <td class="border p-2">{{ question[7] }}</td>
+                                        <td class="border p-2 actions-column">
+                                            <a href="{{ url_for('delete_question', id=question[0]) }}" class="text-red-500 hover:underline" onclick="return confirm('Are you sure?')">Delete</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

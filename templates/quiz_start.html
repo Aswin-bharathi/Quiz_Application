@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Intercollege Quiz</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            user-select: none; /* Prevent text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+    </style>
+    <script>
+        // Timer logic (20 minutes = 1200 seconds)
+        window.onload = function() {
+            let timeLeft = 1200; // 20 minutes in seconds
+            const timerDisplay = document.getElementById('timer');
+            const quizForm = document.getElementById('quiz-form');
+
+            const timerInterval = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Time is up! Submitting quiz.');
+                    quizForm.submit();
+                } else {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timerDisplay.textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                    timeLeft--;
+                }
+            }, 1000);
+        };
+
+        // Prevent right-click
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            alert('Right-click is disabled during the quiz.');
+        });
+
+        // Prevent back button
+        history.pushState(null, null, location.href);
+        window.onpopstate = function() {
+            history.go(1);
+            fetch('/quiz/track_tab_switch', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.auto_submit) {
+                        document.getElementById('quiz-form').submit();
+                    }
+                });
+        };
+
+        // Track tab switching
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                fetch('/quiz/track_tab_switch', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.auto_submit) {
+                            document.getElementById('quiz-form').submit();
+                        }
+                    });
+            }
+        });
+
+        // Disable keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey || e.key === 'PrintScreen' || e.key === 'F12' || e.key === 'F5') {
+                e.preventDefault();
+                alert('Keyboard shortcuts are disabled during the quiz.');
+                fetch('/quiz/track_tab_switch', { method: 'POST' });
+            }
+        });
+
+        // Prevent drag and drop
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+        });
+
+        // Detect dev tools or window resize
+        window.addEventListener('resize', function() {
+            fetch('/quiz/track_tab_switch', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.auto_submit) {
+                        document.getElementById('quiz-form').submit();
+                    }
+                });
+        });
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="min-h-screen flex items-center justify-center p-8">
+        <div class="max-w-3xl w-full relative">
+            <div id="timer" class="absolute top-4 right-4 bg-gray-800 text-white text-base font-semibold py-2 px-4 rounded-lg shadow-md z-10">
+                Time Left: 20:00
+            </div>
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">Intercollege Quiz - {{ session['team']['quiz_type'] }}</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="bg-{{ 'red' if category == 'error' else 'green' }}-100 border-{{ 'red' if category == 'error' else 'green' }}-400 text-{{ 'red' if category == 'error' else 'green' }}-700 px-4 py-3 rounded-lg mb-6 shadow-sm">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <form id="quiz-form" method="POST" action="{{ url_for('quiz_submit') }}">
+                {% for question in questions %}
+                    <div class="mb-6 p-6 bg-white rounded-lg shadow-md">
+                        <p class="text-lg font-semibold text-gray-800 mb-4">{{ loop.index }}. {{ question[0] }}</p>
+                        <div class="space-y-3 ml-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="q{{ loop.index }}" value="{{ question[1] }}" class="mr-2 focus:ring-blue-900" required>
+                                <span>{{ question[1] }}</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="q{{ loop.index }}" value="{{ question[2] }}" class="mr-2 focus:ring-blue-900">
+                                <span>{{ question[2] }}</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="q{{ loop.index }}" value="{{ question[3] }}" class="mr-2 focus:ring-blue-900">
+                                <span>{{ question[3] }}</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="q{{ loop.index }}" value="{{ question[4] }}" class="mr-2 focus:ring-blue-900">
+                                <span>{{ question[4] }}</span>
+                            </label>
+                        </div>
+                        <input type="hidden" name="q{{ loop.index }}-answer" value="{{ question[5] }}">
+                    </div>
+                {% endfor %}
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-gradient-to-r from-gray-800 to-blue-900 text-white py-2 px-6 rounded-lg hover:from-blue-900 hover:to-blue-700 transition duration-200 ease-in-out">Submit Quiz</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
