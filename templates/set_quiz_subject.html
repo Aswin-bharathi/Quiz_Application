@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Set Quiz Subject Access</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -92,4 +94,12 @@
         </div>
     </div>
 </body>
+<script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/static/sw.js")
+        .then(function() {
+          console.log("Service Worker Registered");
+        });
+    }
+</script>
 </html>
