@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Show Questions</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .scrollable-table {
@@ -271,6 +273,12 @@
                 }
             });
         });
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/static/sw.js")
+            .then(function() {
+              console.log("Service Worker Registered");
+            });
+        }
     </script>
 </body>
 </html>
