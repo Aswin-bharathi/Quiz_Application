@@ -1,19 +1,19 @@
 {
   "name": "Quiz Application",
-  "short_name": "QuizApp",
-  "start_url": "/",
+  "short_name": "Quiz App",
+  "start_url": "/admin_login",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2c3e50",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/static/logo.png",
+      "src": "/static/cs.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/static/logo.png",
+      "src": "/static/cs.png",
       "sizes": "512x512",
       "type": "image/png"
     }
