@@ -320,7 +320,7 @@ def show_students():
     c = conn.cursor(cursor_factory=RealDictCursor)
     
     # Fetch distinct departments for dropdown
-    c.execute('SELECT DISTINCT student_dept FROM students WHERE student_dept IS NOT NULL AND student_dept != ""')
+    c.execute("SELECT DISTINCT student_dept FROM students WHERE student_dept IS NOT NULL AND student_dept <> ''")
     departments = [row['student_dept'] for row in c.fetchall()]
     
     # Main query for students
@@ -1224,7 +1224,7 @@ def view_results():
     program = request.args.get('program', '')
     year = request.args.get('year', '')
     department = request.args.get('student_dept', '')
-    c.execute('SELECT DISTINCT student_dept FROM students WHERE student_dept IS NOT NULL AND student_dept != ""')
+    c.execute("SELECT DISTINCT student_dept FROM students WHERE student_dept IS NOT NULL AND student_dept <> ''")
     departments = [row['student_dept'] for row in c.fetchall()]
 
     # Determine the subject_code based on results for filtered students
