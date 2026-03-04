@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Students</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="fixed left-0 top-0 h-screen w-64 bg-gray-800 text-white p-4 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8 ml-64">
+            <h1 class="text-3xl font-bold mb-6">Students List</h1>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Filters + Buttons -->
+            <form method="GET" class="mb-4 flex justify-between items-center">
+                <div class="flex space-x-4 items-center">
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search by name or roll number" class="p-2 border rounded">
+                    <select name="program" class="p-2 border rounded">
+                        <option value="">All Programs</option>
+                        <option value="UG" {% if program == 'UG' %}selected{% endif %}>UG</option>
+                        <option value="PG" {% if program == 'PG' %}selected{% endif %}>PG</option>
+                    </select>
+                    <select name="year" class="p-2 border rounded">
+                        <option value="">All Years</option>
+                        <option value="I" {% if year == 'I' %}selected{% endif %}>I</option>
+                        <option value="II" {% if year == 'II' %}selected{% endif %}>II</option>
+                        <option value="III" {% if year == 'III' %}selected{% endif %}>III</option>
+                    </select>
+                    {% if departments %}
+                    <select name="student_dept" class="p-2 border rounded">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept }}" {% if department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                </div>
+
+                <div class="flex space-x-4">
+                    <button type="button" id="alterYearButton" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 font-medium">
+                        Alter Year
+                    </button>
+                    <button type="button" id="deleteSelectedStudents" class="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 font-medium">
+                        Delete
+                    </button>
+                </div>
+            </form>
+
+            <!-- Alter Year Modal -->
+            <div id="alterYearModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white p-8 rounded-lg shadow-xl w-96">
+                    <h2 class="text-2xl font-bold mb-6 text-center">Alter Student Year</h2>
+                    <p class="mb-6 text-gray-700">
+                        Current year: <strong id="currentYearText" class="text-blue-600"></strong><br>
+                        Promote filtered students to:
+                    </p>
+                    <form id="alterYearForm">
+                        <select id="newYear" name="new_year" class="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:border-blue-500" required>
+                            <option value="">Select New Year</option>
+                        </select>
+                        <div class="flex justify-between">
+                            <button type="submit" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 font-medium">
+                                Update Year
+                            </button>
+                            <button type="button" id="cancelAlter" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 font-medium">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="overflow-y-auto max-h-[calc(100vh-200px)]">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200 sticky top-0">
+                            <th class="border p-3 text-left">Roll No</th>
+                            <th class="border p-3 text-left">Name</th>
+                            <th class="border p-3 text-center">Status</th>
+                            <th class="border p-3 text-left">Program</th>
+                            <th class="border p-3 text-left">Year</th>
+                            <th class="border p-3 text-left">Quiz Status</th>
+                            <th class="border p-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="border p-3">{{ student['roll_no'] }}</td>
+                            <td class="border p-3">{{ student['name'] }}</td>
+                            <td class="border p-3 text-center">
+                                <button class="toggle-status w-14 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none {% if student['active_status'] == 'ON' %}bg-green-500{% else %}bg-gray-300{% endif %}" data-student-id="{{ student['id'] }}">
+                                    <div class="w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-300 {% if student['active_status'] == 'ON' %}translate-x-7{% else %}translate-x-0{% endif %}"></div>
+                                </button>
+                            </td>
+                            <td class="border p-3">{{ student['program'] }}</td>
+                            <td class="border p-3 font-medium">{{ student['year'] }}</td>
+                            <td class="border p-3">{{ student['quiz_status'] }}</td>
+                            <td class="border p-3 text-center space-x-3">
+                                <a href="{{ url_for('update_student', id=student['id']) }}" class="text-blue-600 hover:text-blue-800 text-xl">✏️</a>
+                                <a href="{{ url_for('delete_student', id=student['id']) }}" class="text-red-600 hover:text-red-800 text-xl" onclick="return confirm('Delete this student?')">🗑️</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if not students %}
+                <p class="mt-6 text-center text-gray-600 text-lg">No students found matching the filters.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const programSelect = document.querySelector('select[name="program"]');
+            const yearSelect = document.querySelector('select[name="year"]');
+            const deptSelect = document.querySelector('select[name="student_dept"]');
+            const deleteButton = document.getElementById('deleteSelectedStudents');
+            const alterYearButton = document.getElementById('alterYearButton');
+            const alterYearModal = document.getElementById('alterYearModal');
+            const currentYearText = document.getElementById('currentYearText');
+            const newYearSelect = document.getElementById('newYear');
+            const cancelAlter = document.getElementById('cancelAlter');
+
+            // Year visibility based on program
+            function updateYearOptions() {
+                const selectedProgram = programSelect.value;
+                const yearOptions = yearSelect.querySelectorAll('option');
+
+                yearOptions.forEach(option => {
+                    if (selectedProgram === 'PG' && option.value === 'III') {
+                        option.style.display = 'none';
+                    } else {
+                        option.style.display = 'block';
+                    }
+                });
+
+                if (yearSelect.value === 'III' && selectedProgram === 'PG') {
+                    yearSelect.value = '';
+                }
+            }
+
+            updateYearOptions();
+            programSelect.addEventListener('change', updateYearOptions);
+            programSelect.addEventListener('change', () => document.querySelector('form').submit());
+            yearSelect.addEventListener('change', () => document.querySelector('form').submit());
+            if (deptSelect) deptSelect.addEventListener('change', () => document.querySelector('form').submit());
+
+            // Delete Selected Students
+            deleteButton.addEventListener('click', function() {
+                if (confirm('Are you sure you want to delete all students matching the current filters?')) {
+                    const formData = new FormData(document.querySelector('form'));
+                    fetch('/delete_selected_students', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        alert(data.success ? 'Students deleted successfully!' : 'Error: ' + data.error);
+                        if (data.success) location.reload();
+                    })
+                    .catch(() => alert('Network error'));
+                }
+            });
+
+            // Toggle Active Status
+            document.querySelectorAll('.toggle-status').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.studentId;
+                    fetch(`/toggle_student_status/${id}`, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const on = data.new_status === 'ON';
+                            this.classList.toggle('bg-green-500', on);
+                            this.classList.toggle('bg-gray-300', !on);
+                            this.querySelector('div').classList.toggle('translate-x-7', on);
+                            this.querySelector('div').classList.toggle('translate-x-0', !on);
+                        }
+                    });
+                });
+            });
+
+            // Alter Year Feature
+            alterYearButton.addEventListener('click', function() {
+                const currentYear = yearSelect.value;
+                const currentProgram = programSelect.value;
+
+                if (!currentYear) {
+                    alert('Please select a Year from the filter first!');
+                    return;
+                }
+
+                currentYearText.textContent = currentYear;
+                newYearSelect.innerHTML = '<option value="">Select New Year</option>';
+
+                const options = [];
+                if (currentProgram === 'PG') {
+                    if (currentYear === 'I') options.push('<option value="II">II</option>');
+                } else { // UG
+                    if (currentYear === 'I') options.push('<option value="II">II</option>');
+                    if (currentYear === 'II') options.push('<option value="III">III</option>');
+                }
+
+                if (options.length === 0) {
+                    alert('No promotion possible — students are already in final year.');
+                    return;
+                }
+
+                newYearSelect.innerHTML += options.join('');
+                alterYearModal.classList.remove('hidden');
+            });
+
+            cancelAlter.addEventListener('click', () => alterYearModal.classList.add('hidden'));
+
+            document.getElementById('alterYearForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const newYear = newYearSelect.value;
+                if (!newYear) return alert('Please select a new year!');
+
+                if (!confirm(`Promote all filtered students from Year ${yearSelect.value} to Year ${newYear}?`)) return;
+
+                const formData = new FormData(document.querySelector('form'));
+                formData.append('new_year', newYear);
+
+                fetch('/alter_student_year', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.success 
+                        ? `Success! ${data.updated_count} students promoted to Year ${newYear}.`
+                        : 'Error: ' + data.error);
+                    if (data.success) location.reload();
+                })
+                .catch(() => alert('Network error occurred.'));
+            });
+        });
+    </script>
+</body>
+</html>

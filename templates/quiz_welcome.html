@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Ready</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .card { background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); padding: 3rem; max-width: 500px; width: 90%; text-align: center; }
+        .title { font-size: 2.8rem; font-weight: 800; color: #4c51bf; margin-bottom: 2rem; }
+        .details { background: #f7fafc; padding: 2rem; border-radius: 16px; margin: 2rem 0; }
+        .detail { font-size: 1.3rem; margin: 1rem 0; color: #2d3748; }
+        .label { font-weight: 700; color: #4c51bf; }
+        .start-btn { background: linear-gradient(to right, #667eea, #764ba2); color: white; padding: 1.2rem 3rem; font-size: 1.4rem; font-weight: 700; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s; box-shadow: 0 10px 20px rgba(102,126,234,0.3); }
+        .start-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(102,126,234,0.4); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1 class="title">Quiz Ready!</h1>
+        
+        <div class="details">
+            <div class="detail"><span class="label">Name:</span> {{ session['student']['name'] }}</div>
+            <div class="detail"><span class="label">Roll No:</span> {{ session['student']['roll_no'] }}</div>
+            <div class="detail"><span class="label">Subject:</span> {{ session['student']['subject_name'] }}</div>
+        </div>
+
+        <p class="text-gray-700 text-lg mb-8">Click "Start Quiz" to begin in full-screen mode.</p>
+
+        <button id="startBtn" class="start-btn">Start Quiz</button>
+    </div>
+
+    <script>
+            document.getElementById('startBtn').addEventListener('click', async function() {
+            try {
+                const elem = document.documentElement;
+                await elem.requestFullscreen?.() ||
+                    elem.webkitRequestFullscreen?.() ||
+                    elem.msRequestFullscreen?.();
+
+                // Only redirect if fullscreen succeeded
+                window.location.href = "/quiz_start";
+            } catch (err) {
+                if (confirm('Fullscreen blocked or cancelled. Still want to start quiz in normal mode?')) {
+                    window.location.href = "/quiz_start";
+                }
+            }
+        });
+
+    // Prevent escape key from exiting fullscreen early
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+        }
+    });
+</script>
+</body>
+</html>

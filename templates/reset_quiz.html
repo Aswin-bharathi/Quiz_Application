@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reset Quiz Status</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <div class="flex h-screen">
+    <div class="w-64 bg-gray-800 text-white p-4">
+      <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+      <nav>
+        <ul>
+          <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+          <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+          <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+          <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+          <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+          <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+          <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+          <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+          <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+          <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+          <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+          <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+          <li class="mb-2">
+            <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+               onclick="return confirm('Are you sure you want to logout?')">
+              <span class="mr-2">⏻</span> Logout
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="flex-1 p-8">
+      <h1 class="text-3xl font-bold mb-6">Reset Quiz Status</h1>
+
+      <!-- Simple Checkbox -->
+      <label class="inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="resetCheckbox" class="form-checkbox h-5 w-5 text-blue-600" />
+        <span class="ml-3 text-gray-900 font-medium select-none">Reset Quiz Status and Scores</span>
+      </label>
+
+      <!-- Confirm button -->
+      <button id="confirmBtn" disabled
+        class="ml-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        Confirm Reset
+      </button>
+
+      <!-- Confirmation Modal -->
+      <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded shadow-lg p-6 max-w-md w-full">
+          <h3 class="text-xl font-semibold mb-4">Have you already downloaded the results?</h3>
+          <p class="mb-6">If No, you will be redirected to the View Results page.</p>
+          <div class="flex justify-end space-x-4">
+            <button id="noBtn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">No</button>
+            <button id="yesBtn" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Yes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const checkbox = document.getElementById('resetCheckbox');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const modal = document.getElementById('confirmModal');
+    const noBtn = document.getElementById('noBtn');
+    const yesBtn = document.getElementById('yesBtn');
+
+    checkbox.addEventListener('change', () => {
+      confirmBtn.disabled = !checkbox.checked;
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+    });
+
+    noBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      window.location.href = "{{ url_for('view_results') }}";
+    });
+
+    yesBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      
+      fetch("{{ url_for('download_and_reset') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.blob();
+        } else {
+          throw new Error('Network response was not ok.');
+        }
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'quiz_results.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+        alert('Results downloaded, quiz status and scores reset successfully!');
+        checkbox.checked = false;
+        confirmBtn.disabled = true;
+      })
+      .catch(error => {
+        alert('Error occurred during reset: ' + error.message);
+      });
+    });
+  </script>
+</body>
+</html>

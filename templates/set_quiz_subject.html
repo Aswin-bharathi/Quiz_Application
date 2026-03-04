@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Set Quiz Subject Access</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white p-4">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-500 hover:text-red-700 rounded"
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            ⏻ Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 p-8 overflow-y-auto">
+            <h1 class="text-3xl font-bold mb-6">Set Allowed Subject for Quiz</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Allowed Subject Access</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for item in subject_options %}
+                    <form method="POST" class="flex items-center justify-between bg-white p-3 rounded shadow">
+                        <input type="hidden" name="program" value="{{ item.program }}">
+                        <input type="hidden" name="year" value="{{ item.year }}">
+                        <input type="hidden" name="subject_code" value="{{ item.subject_code }}">
+                        
+                        {% if item.subject_code in current_allowed_subjects %}
+                            <input type="hidden" name="action" value="off">
+                        {% else %}
+                            <input type="hidden" name="action" value="on">
+                        {% endif %}
+
+                        <span class="text-gray-800 font-medium">
+                            {{ item.subject_code }} ({{ item.program }} - {{ item.year }})
+                        </span>
+
+                        <button type="submit" 
+                            class="relative inline-flex items-center h-6 rounded-full w-11 
+                                   transition-colors focus:outline-none
+                                   {% if item.subject_code in current_allowed_subjects %}
+                                       bg-green-500
+                                   {% else %}
+                                       bg-gray-300
+                                   {% endif %}">
+                            <span class="sr-only">Toggle Subject</span>
+                            <span class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform
+                                {% if item.subject_code in current_allowed_subjects %}
+                                    translate-x-6
+                                {% else %}
+                                    translate-x-1
+                                {% endif %}">
+                            </span>
+                        </button>
+                    </form>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

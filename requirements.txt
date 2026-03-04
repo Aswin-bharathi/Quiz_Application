@@ -1,0 +1,8 @@
+Flask
+mysql-connector-python
+pandas
+xlsxwriter
+reportlab
+python-dotenv
+gunicorn
+openpyxl

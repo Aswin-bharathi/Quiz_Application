@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Quiz Login</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #E6ECF2, #D8E2F0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            color: #2D3748;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #2D3748;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .message-error {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(229, 62, 62, 0.1);
+            color: #E53E3E;
+            border-radius: 8px;
+            border-left: 4px solid #E53E3E;
+            font-size: 0.9rem;
+        }
+        .message-success {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(56, 161, 105, 0.1);
+            color: #38A169;
+            border-radius: 8px;
+            border-left: 4px solid #38A169;
+            font-size: 0.9rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2D3748;
+            margin-bottom: 0.5rem;
+        }
+        .form-input {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #CBD5E0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #4B5EAA;
+            box-shadow: 0 0 0 3px rgba(75, 94, 170, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+        .submit-button {
+            width: 100%;
+            background: linear-gradient(to right, #4B5EAA, #3A4A8B);
+            color: #FFFFFF;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .submit-button:hover {
+            background: linear-gradient(to right, #3A4A8B, #2C3A7A);
+            transform: translateY(-2px);
+        }
+        .submit-button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title">Student Quiz Login</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="form-group {% if category == 'error' %}message-error{% else %}message-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="roll_no" class="form-label">Roll Number</label>
+                <input type="text" id="roll_no" name="roll_no" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label for="entry_code" class="form-label">Entry Code</label>
+                <input type="text" id="entry_code" name="entry_code" class="form-input" required>
+            </div>
+
+            <button type="submit" class="submit-button">Start Quiz</button>
+        </form>
+    </div>
+</body>
+</html>

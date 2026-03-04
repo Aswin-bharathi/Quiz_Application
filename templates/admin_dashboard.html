@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div class="w-64 bg-gray-800 text-white p-4">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="flex-1 p-8">
+            <h1 class="text-3xl font-bold mb-6">Welcome to Admin Dashboard</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <p class="text-gray-700">Use the sidebar to manage students, questions, subjects, and quiz settings.</p>
+        </div>
+    </div>
+</body>
+</html>

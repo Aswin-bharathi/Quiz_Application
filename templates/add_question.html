@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Question</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white p-4">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>   
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Main Content with Vertical Scroll -->
+        <div class="flex-1 p-8 overflow-y-auto max-h-screen">
+            <h1 class="text-3xl font-bold mb-6">Add Question</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="max-w-md space-y-4">
+                <!-- Program -->
+                <div>
+                    <label for="program" class="block text-sm font-medium text-gray-700">Program</label>
+                    <select id="program" name="program" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not program %}selected{% endif %}>Select Program</option>
+                        <option value="UG" {% if program == 'UG' %}selected{% endif %}>UG</option>
+                        <option value="PG" {% if program == 'PG' %}selected{% endif %}>PG</option>
+                    </select>
+                </div>
+
+                <!-- Year -->
+                <div>
+                    <label for="year" class="block text-sm font-medium text-gray-700">Year</label>
+                    <select id="year" name="year" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not year %}selected{% endif %}>Select Year</option>
+                        <option value="I" {% if year == 'I' %}selected{% endif %}>I</option>
+                        <option value="II" {% if year == 'II' %}selected{% endif %}>II</option>
+                        <option value="III" {% if year == 'III' %}selected{% endif %}>III</option>
+                    </select>
+                </div>
+
+                <!-- Subject Code -->
+                <div>
+                    <label for="subject_code" class="block text-sm font-medium text-gray-700">Subject Code</label>
+                    <select id="subject_code" name="subject_code" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not subject_code %}selected{% endif %}>Select Subject Code</option>
+                        {% for sub in subjects %}
+                            <option value="{{ sub['subject_code'] }}" 
+                                    data-name="{{ sub['subject_name'] }}"
+                                    data-program="{{ sub['program'] }}"
+                                    data-year="{{ sub['year'] }}"
+                                    {% if subject_code == sub['subject_code'] %}selected{% endif %}>
+                                {{ sub['subject_code'] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Subject Name -->
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700">Subject</label>
+                    <select id="subject" name="subject" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not subject %}selected{% endif %}>Select Subject</option>
+                        {% for sub in subjects %}
+                            <option value="{{ sub['subject_name'] }}" 
+                                    data-code="{{ sub['subject_code'] }}"
+                                    data-program="{{ sub['program'] }}"
+                                    data-year="{{ sub['year'] }}"
+                                    {% if subject == sub['subject_name'] %}selected{% endif %}>
+                                {{ sub['subject_name'] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Course Outcome -->
+                <div>
+                    <label for="co" class="block text-sm font-medium text-gray-700">Course Outcome (CO)</label>
+                    <select id="co" name="co" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="">Select CO</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+
+                <!-- Question -->
+                <div>
+                    <label for="question" class="block text-sm font-medium text-gray-700">Question</label>
+                    <textarea id="question" name="question" class="mt-1 block w-full p-2 border rounded" required></textarea>
+                </div>
+
+                <!-- Options -->
+                <div>
+                    <label for="option1" class="block text-sm font-medium text-gray-700">Option 1</label>
+                    <input type="text" id="option1" name="option1" class="mt-1 block w-full p-2 border rounded" >
+                </div>
+                <div>
+                    <label for="option2" class="block text-sm font-medium text-gray-700">Option 2</label>
+                    <input type="text" id="option2" name="option2" class="mt-1 block w-full p-2 border rounded" >
+                </div>
+                <div>
+                    <label for="option3" class="block text-sm font-medium text-gray-700">Option 3</label>
+                    <input type="text" id="option3" name="option3" class="mt-1 block w-full p-2 border rounded" >
+                </div>
+                <div>
+                    <label for="option4" class="block text-sm font-medium text-gray-700">Option 4</label>
+                    <input type="text" id="option4" name="option4" class="mt-1 block w-full p-2 border rounded" >
+                </div>
+
+                <!-- Correct Answer -->
+                <div>
+                    <label for="answer" class="block text-sm font-medium text-gray-700">Correct Answer</label>
+                    <input type="text" id="answer" name="answer" class="mt-1 block w-full p-2 border rounded" required>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Add Question</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const programSelect = document.getElementById('program');
+    const yearSelect = document.getElementById('year');
+    const subjectCodeSelect = document.getElementById('subject_code');
+    const subjectSelect = document.getElementById('subject');
+
+    // Program-Year auto filter (PG can't select III)
+    function updateYearOptions() {
+        const selectedProgram = programSelect.value;
+        const yearOptions = yearSelect.getElementsByTagName('option');
+        for (let option of yearOptions) {
+            if (selectedProgram === 'PG') {
+                option.style.display = option.value === 'III' ? 'none' : 'block';
+            } else {
+                option.style.display = 'block';
+            }
+        }
+        if (yearSelect.value === 'III' && selectedProgram === 'PG') {
+            yearSelect.value = '';
+        }
+    }
+    updateYearOptions();
+    programSelect.addEventListener('change', updateYearOptions);
+
+    // Sync subject -> subject_code, program, year
+    subjectSelect.addEventListener('change', function() {
+        const opt = subjectSelect.options[subjectSelect.selectedIndex];
+        if (opt) {
+            subjectCodeSelect.value = opt.dataset.code || "";
+            programSelect.value = opt.dataset.program || "";
+            yearSelect.value = opt.dataset.year || "";
+        }
+    });
+
+    // Sync subject_code -> subject, program, year
+    subjectCodeSelect.addEventListener('change', function() {
+        const opt = subjectCodeSelect.options[subjectCodeSelect.selectedIndex];
+        if (opt) {
+            for (let s of subjectSelect.options) {
+                if (s.dataset.code === opt.value) {
+                    s.selected = true;
+                    break;
+                }
+            }
+            programSelect.value = opt.dataset.program || "";
+            yearSelect.value = opt.dataset.year || "";
+        }
+    });
+});
+</script>
+</html>

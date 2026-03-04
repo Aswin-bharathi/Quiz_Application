@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grant Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggles = document.querySelectorAll('.access-toggle');
+            toggles.forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const subjectCode = this.getAttribute('data-subject');
+                    const isChecked = this.checked;
+                    fetch('/grant_access', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ subject_code: subjectCode, access: isChecked })
+                    }).then(response => response.json())
+                      .then(data => {
+                          if (data.success) {
+                              alert('Access updated successfully!');
+                          } else {
+                              alert('Failed to update access!');
+                              this.checked = !isChecked; // Revert toggle if failed
+                          }
+                      });
+                });
+            });
+        });
+    </script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div class="w-64 bg-gray-800 text-white p-4">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('admin_logout') }}" class="block p-2 hover:bg-gray-700 rounded">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="flex-1 p-8">
+            <h1 class="text-3xl font-bold mb-6">Grant Access</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for subject in subjects %}
+                    <div class="p-4 bg-white rounded shadow">
+                        <h3 class="text-lg font-semibold">{{ subject.subject_code }} - {{ subject.subject_name }}</h3>
+                        <label class="inline-flex items-center mt-2">
+                            <input type="checkbox" class="access-toggle" data-subject="{{ subject.subject_code }}" {{ 'checked' if subject.access else '' }} class="form-checkbox h-5 w-5 text-blue-600">
+                            <span class="ml-2 text-gray-700">Grant Access</span>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Question</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gray-800 text-white p-4">
+        <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+        <nav>
+            <ul>
+                <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                <li class="mb-2">
+                    <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                       onclick="return confirm('Are you sure you want to logout?')">
+                        <span class="mr-2">⏻</span> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-8">
+        <h1 class="text-3xl font-bold mb-6">Update Question</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="max-w-lg">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Question Text</label>
+                <textarea name="question_text" rows="3" class="mt-1 block w-full p-2 border rounded" required>{{ question['question_text'] }}</textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Option A</label>
+                <input type="text" name="option_a" value="{{ question['option_a'] }}" class="mt-1 block w-full p-2 border rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Option B</label>
+                <input type="text" name="option_b" value="{{ question['option_b'] }}" class="mt-1 block w-full p-2 border rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Option C</label>
+                <input type="text" name="option_c" value="{{ question['option_c'] }}" class="mt-1 block w-full p-2 border rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Option D</label>
+                <input type="text" name="option_d" value="{{ question['option_d'] }}" class="mt-1 block w-full p-2 border rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Correct Option</label>
+                <select name="correct_option" class="mt-1 block w-full p-2 border rounded" required>
+                    <option value="A" {% if question['correct_option'] == 'A' %}selected{% endif %}>A</option>
+                    <option value="B" {% if question['correct_option'] == 'B' %}selected{% endif %}>B</option>
+                    <option value="C" {% if question['correct_option'] == 'C' %}selected{% endif %}>C</option>
+                    <option value="D" {% if question['correct_option'] == 'D' %}selected{% endif %}>D</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Subject</label>
+                <select name="subject_id" class="mt-1 block w-full p-2 border rounded" required>
+                    {% for subject in subjects %}
+                        <option value="{{ subject['id'] }}" {% if subject['id'] == question['subject_id'] %}selected{% endif %}>
+                            {{ subject['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Update Question</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

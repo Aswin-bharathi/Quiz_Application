@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Subject</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div class="w-64 bg-gray-800 text-white p-4">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="flex-1 p-8">
+            <h1 class="text-3xl font-bold mb-6">Add Subject</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <form method="POST" class="max-w-md">
+                <div class="mb-4">
+                    <label for="program" class="block text-sm font-medium text-gray-700">Program</label>
+                    <select id="program" name="program" class="mt-1 block w-full p-2 border rounded" required onchange="updateYearOptions()">
+                        <option value="select program">Select Program</option>
+                        <option value="UG">UG</option>
+                        <option value="PG">PG</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="year" class="block text-sm font-medium text-gray-700">Year</label>
+                    <select id="year" name="year" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not year %}selected{% endif %}>Select Year</option>
+                        <option value="I">I</option>
+                        <option value="II">II</option>
+                        <option value="III">III</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="subject_code" class="block text-sm font-medium text-gray-700">Subject Code</label>
+                    <input type="text" id="subject_code" name="subject_code" class="mt-1 block w-full p-2 border rounded" required>
+                </div>
+                <div class="mb-4">
+                    <label for="subject_name" class="block text-sm font-medium text-gray-700">Subject Name</label>
+                    <input type="text" id="subject_name" name="subject_name" class="mt-1 block w-full p-2 border rounded" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Add Subject</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function updateYearOptions() {
+            const program = document.getElementById('program').value;
+            const yearSelect = document.getElementById('year');
+            let yearIII = yearSelect.querySelector('option[value="III"]');
+
+            // If III option doesn't exist, create it for UG
+            if (!yearIII && program === 'UG') {
+                yearIII = document.createElement('option');
+                yearIII.value = 'III';
+                yearIII.text = 'III';
+                yearSelect.appendChild(yearIII);
+            }
+
+            if (program === 'PG') {
+                if (yearIII) {
+                    yearIII.remove(); // Remove III for PG
+                }
+                if (yearSelect.value === 'III') {
+                    yearSelect.value = 'I'; // Default to I if III was selected
+                }
+            } else if (program === 'UG' && !yearIII) {
+                yearIII = document.createElement('option');
+                yearIII.value = 'III';
+                yearIII.text = 'III';
+                yearSelect.appendChild(yearIII);
+            }
+        }
+
+        // Trigger on page load to set initial state
+        document.addEventListener('DOMContentLoaded', updateYearOptions);
+    </script>
+</body>
+</html>

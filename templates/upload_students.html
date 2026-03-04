@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Students</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function validateForm() {
+            const program = document.getElementById('program').value;
+            const year = document.getElementById('year').value;
+            const file = document.getElementById('file').value;
+
+            if (!program || !year || !file) {
+                alert('Please fill in all fields before uploading!');
+                return false;
+            }
+            return confirm('Are you sure you want to upload the students?');
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const programSelect = document.querySelector('select[name="program"]');
+            const yearSelect = document.querySelector('select[name="year"]');
+
+            function updateYearOptions() {
+                const selectedProgram = programSelect.value;
+                const yearOptions = yearSelect.getElementsByTagName('option');
+
+                for (let option of yearOptions) {
+                    if (selectedProgram === 'PG') {
+                        if (option.value === 'III') {
+                            option.style.display = 'none';
+                        } else {
+                            option.style.display = 'block';
+                        }
+                    } else {
+                        option.style.display = 'block';
+                    }
+                }
+
+                // Ensure the first option ("All Years") is selected by default if the current selection is hidden
+                if (yearSelect.value === 'III' && selectedProgram === 'PG') {
+                    yearSelect.value = '';
+                }
+            }
+
+            // Initial call to set options based on the current program value
+            updateYearOptions();
+
+            // Add event listener for program change
+            programSelect.addEventListener('change', updateYearOptions);
+        });
+    </script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div class="fixed left-0 top-0 h-screen w-64 bg-gray-800 text-white p-4 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="flex-1 p-8 ml-64">
+            <h1 class="text-3xl font-bold mb-6">Upload Students</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <form method="POST" enctype="multipart/form-data" class="max-w-md" onsubmit="return validateForm()">
+                <div class="mb-4">
+                    <label for="program" class="block text-sm font-medium text-gray-700">Program</label>
+                    <select id="program" name="program" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not program %}selected{% endif %}>Select Program</option>
+                        <option value="UG" {% if program == 'UG' %}selected{% endif %}>UG</option>
+                        <option value="PG" {% if program == 'PG' %}selected{% endif %}>PG</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="year" class="block text-sm font-medium text-gray-700">Year</label>
+                    <select id="year" name="year" class="mt-1 block w-full p-2 border rounded" required>
+                        <option value="" {% if not year %}selected{% endif %}>Select Year</option>
+                        <option value="I" {% if year == 'I' %}selected{% endif %}>I</option>
+                        <option value="II" {% if year == 'II' %}selected{% endif %}>II</option>
+                        <option value="III" {% if year == 'III' %}selected{% endif %}>III</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="file" class="block text-sm font-medium text-gray-700">Upload Excel File (.xlsx)</label>
+                    <input type="file" id="file" name="file" accept=".xlsx" class="mt-1 block w-full p-2 border rounded" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Upload</button>
+            </form>
+            <p class="mt-4 text-sm text-gray-600">Excel file should have columns: roll_no, name, student_dept, student_mail</p>
+        </div>
+    </div>
+</body>
+</html>

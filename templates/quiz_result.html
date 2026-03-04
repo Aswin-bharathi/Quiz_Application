@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Result</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #E6ECF2, #D8E2F0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            color: #2D3748;
+        }
+        .result-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2D3748;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .score {
+            font-size: 1.25rem;
+            color: #4A5568;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .score-value-green {
+            font-weight: 600;
+            color: #38A169;
+        }
+        .score-value-yellow {
+            font-weight: 600;
+            color: #D69E2E;
+        }
+        .score-value-red {
+            font-weight: 600;
+            color: #E53E3E;
+        }
+        .details {
+            font-size: 1rem;
+            color: #4A5568;
+            margin-top: 1rem;
+        }
+        .return-button {
+            display: inline-block;
+            margin-top: 1.5rem;
+            background: linear-gradient(to right, #4B5EAA, #3A4A8B);
+            color: #FFFFFF;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .return-button:hover {
+            background: linear-gradient(to right, #3A4A8B, #2C3A7A);
+            transform: translateY(-2px);
+        }
+        .return-button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="result-card">
+        <h2 class="title">Quiz Completed</h2>
+
+        {% set percentage = (score / total_questions) * 100 %}
+        
+        {% if percentage >= 75 %}
+            <p class="score">Score: <span class="score-value-green">{{ percentage|round(2) }}%</span></p>
+        {% elif percentage >= 50 %}
+            <p class="score">Score: <span class="score-value-yellow">{{ percentage|round(2) }}%</span></p>
+        {% else %}
+            <p class="score">Score: <span class="score-value-red">{{ percentage|round(2) }}%</span></p>
+        {% endif %}
+
+        <p class="details">You answered {{ score }} out of {{ total_questions }} questions correctly.</p>
+
+        <a href="{{ url_for('quiz_login') }}" class="return-button">Return to Login</a>
+    </div>
+</body>
+</html>

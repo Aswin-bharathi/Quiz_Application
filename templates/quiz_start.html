@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Online Quiz</title>
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+
+            /* Allow scroll */
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+
+        /* ================= WELCOME SCREEN ================= */
+        #welcomeScreen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: linear-gradient(135deg,
+                #ccfbf1,
+                #e0e7ff,
+                #ede9fe
+            );
+        }
+
+        .welcome-container {
+            width: 100%;
+            max-width: 720px;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        }
+
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .welcome-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #6d28d9;
+        }
+
+        .welcome-header p {
+            margin-top: 0.4rem;
+            font-size: 0.95rem;
+            color: #475569;
+        }
+
+        /* Student Details */
+        .student-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .student-box h2 {
+            font-size: 1.1rem;
+            color: #334155;
+            margin-bottom: 1rem;
+        }
+
+        .student-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            row-gap: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .student-grid .label {
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .student-grid .value {
+            color: #1e293b;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 20px;
+            padding: 1.5rem;
+            font-size: 0.95rem;
+            color: #4c1d95;
+            margin-bottom: 1.4rem;
+        }
+
+        .instructions h3 {
+            font-size: 1rem;
+            margin-bottom: 0.6rem;
+            color: #5b21b6;
+        }
+
+        /* Confirmation */
+        .confirm-box {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+            color: #334155;
+            margin-bottom: 1.4rem;
+        }
+
+        .confirm-box input {
+            accent-color: #7c3aed;
+        }
+
+        /* Start Button */
+        .start-btn {
+            width: 100%;
+            padding: 0.95rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            box-shadow: 0 8px 18px rgba(79,70,229,0.35);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ================= QUIZ SCREEN ================= */
+        #quizScreen {
+            display: none;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .quiz-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 22px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .quiz-header {
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 1rem;
+        }
+
+        .quiz-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        /* Timer */
+        #timer {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #dc2626;
+            background: rgba(254, 226, 226, 0.95);
+            padding: 0.7rem 1.6rem;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
+            z-index: 1000;
+        }
+
+        /* Questions */
+        .question {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.6rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .q-number {
+            font-weight: 700;
+            color: #6366f1;
+            margin-bottom: 0.6rem;
+        }
+
+        .q-text {
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option:hover {
+            background: #eef2ff;
+            border-color: #6366f1;
+        }
+
+        .option input {
+            margin-right: 0.8rem;
+            accent-color: #6366f1;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            margin-top: 2rem;
+            padding: 0.9rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            background: #16a34a;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #15803d;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= WELCOME SCREEN ================= -->
+<div id="welcomeScreen">
+    <div class="welcome-container">
+
+        <div class="welcome-header">
+            <h1>Department Online Quiz</h1>
+            <p>Please verify your details and read the instructions</p>
+        </div>
+
+        <div class="student-box">
+            <h2>Student Details</h2>
+            <div class="student-grid">
+                <span class="label">Name</span>
+                <span class="value">{{ session['student']['name'] }}</span>
+
+                <span class="label">Roll Number</span>
+                <span class="value">{{ session['student']['roll_no'] }}</span>
+
+                <span class="label">Subject</span>
+                <span class="value">{{ session['student']['subject_name'] }}</span>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>Instructions</h3>
+            <p>• Quiz starts in fullscreen mode.</p>
+            <p>• Do not refresh or switch tabs.</p>
+            <p>• Do not open Developer Tools.</p>
+            <p>• Any violation will auto-submit the quiz.</p>
+        </div>
+
+        <div class="confirm-box">
+            <input type="checkbox" id="confirmRules">
+            <label for="confirmRules">I have read and understood the instructions</label>
+        </div>
+
+        <button id="startBtn" class="start-btn" disabled>
+            Start Quiz
+        </button>
+
+    </div>
+</div>
+
+<!-- ================= QUIZ SCREEN ================= -->
+<div id="quizScreen">
+    <div class="quiz-container">
+
+        <div class="quiz-header">
+            <h2>{{ session['student']['subject_name'] }}</h2>
+        </div>
+
+        <form id="quizForm" method="POST" action="{{ url_for('quiz_submit') }}">
+            {% for question in questions %}
+            <div class="question">
+                <div class="q-number">Question {{ loop.index }}</div>
+                <div class="q-text">{{ question['question'] }}</div>
+
+                <div class="options">
+                    {% for i in range(1,5) %}
+                        {% set opt = question['option' ~ i] %}
+                        {% if opt and opt.strip() %}
+                        <label class="option">
+                            <input type="radio" name="{{ question['id'] }}" value="{{ opt }}" required>
+                            {{ opt }}
+                        </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="submit-btn">Submit Quiz</button>
+        </form>
+    </div>
+
+    <div id="timer">Loading...</div>
+</div>
+
+<script>
+    let isSubmitting = false;
+
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const quizScreen = document.getElementById('quizScreen');
+    const startBtn = document.getElementById('startBtn');
+    const checkbox = document.getElementById('confirmRules');
+    const timer = document.getElementById('timer');
+    const form = document.getElementById('quizForm');
+
+    checkbox.addEventListener('change', () => {
+        startBtn.disabled = !checkbox.checked;
+    });
+
+    const program = '{{ session["student"]["program"] }}'.toLowerCase();
+    const duration = program === 'ug' ? 10 * 60 * 1000 : 15 * 60 * 1000;
+    const startTime = Date.now();
+
+    /* 🔒 SAFE SUBMIT (new, small, important) */
+    function safeSubmit() {
+        if (isSubmitting) return;
+        isSubmitting = true;
+        form.submit();
+    }
+
+    function updateTimer() {
+        const remaining = duration - (Date.now() - startTime);
+
+        if (remaining <= 0) {
+            timer.textContent = "Time Up!";
+            safeSubmit();   // ❌ form.submit() → ✅ safeSubmit()
+            return;
+        }
+
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        timer.textContent =
+            `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }
+
+    startBtn.addEventListener('click', async () => {
+        try {
+            await document.documentElement.requestFullscreen();
+        } catch {}
+
+        welcomeScreen.style.display = 'none';
+        quizScreen.style.display = 'block';
+        document.body.style.overflow = 'auto';
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        if (
+            !document.fullscreenElement &&
+            quizScreen.style.display === 'block' &&
+            !isSubmitting
+        ) {
+            alert('Fullscreen exited. Quiz auto-submitted.');
+            safeSubmit();   // ❌ form.submit() → ✅ safeSubmit()
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'F5' || e.key === 'F12' ||
+            (e.ctrlKey && ['r','R'].includes(e.key))) {
+            e.preventDefault();
+            alert('Action blocked!');
+        }
+    });
+
+    document.oncontextmenu = () => false;
+    document.onselectstart = () => false;
+
+    form.addEventListener('submit', () => {
+        isSubmitting = true;
+        if (document.exitFullscreen) document.exitFullscreen();
+    });
+</script>
+
+
+</body>
+</html>

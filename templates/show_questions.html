@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Show Questions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .scrollable-table {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="fixed left-0 top-0 h-screen w-64 bg-gray-800 text-white p-4 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8 ml-64">
+            <h1 class="text-3xl font-bold mb-6">Questions List</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Filter with Button Moved to Right -->
+            <form method="GET" class="mb-4 flex justify-between items-center">
+                <select name="subject" class="p-2 border rounded" onchange="this.form.submit()">
+                    <option value="">Select Subject</option>
+                    {% for subject in subjects %}
+                        <option value="{{ subject['subject_code'] }}" {% if subject['subject_code'] == selected_subject %}selected{% endif %}>
+                            {{ subject['subject_name'] }} ({{ subject['subject_code'] }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <button
+                        type="button"
+                        id="deleteSelectedQuestions"
+                        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Delete Selected Questions</button>
+            </form>
+            <!-- Table -->
+            <div class="scrollable-table border rounded">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200 sticky top-0">
+                            <th class="border p-2">CO</th>
+                            <th class="border p-2">Subject</th>
+                            <th class="border p-2">Question</th>
+                            <th class="border p-2">Options</th>
+                            <th class="border p-2">Correct Answer</th>
+                            <th class="border p-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for question in questions %}
+                        <tr data-program="{{ question['program'] }}" data-year="{{ question['year'] }}" data-subject-code="{{ question['subject_code'] }}">
+                            <td class="border p-2">{{ question['co'] if question['co'] else 'Not Set' }}</td>
+                            <td class="border p-2">{{ question['subject'] if question['subject'] else 'Unknown' }}</td>
+                            <td class="border p-2">{{ question['question'] }}</td>
+                            <td class="border p-2">
+                                1. {{ question['option1'] }}<br>
+                                2. {{ question['option2'] }}<br>
+                                3. {{ question['option3'] }}<br>
+                                4. {{ question['option4'] }}
+                            </td>
+                            <td class="border p-2">{{ question['answer'] if question['answer'] else 'Not Set' }}</td>
+                            <td class="border p-2">
+                                <a href="#" class="edit-question" data-id="{{ question['id'] }}">✏️</a> |
+                                <a href="{{ url_for('delete_question', question_id=question['id'], subject=selected_subject) }}" onclick="return confirm('Are you sure you want to delete this question?')">🗑️</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal -->
+            <div id="editModal" class="modal hidden">
+                <div class="modal-content">
+                    <button type="button" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onclick="closeModal()">✖</button>
+                    <h2 class="text-xl font-bold mb-4">Edit Question</h2>
+                    <form method="POST" id="editForm" action="">
+                        <input type="hidden" name="question_id" id="questionId" />
+                        <div class="mb-4">
+                            <label class="block">Program</label>
+                            <select id="program" name="program" class="w-full p-2 border rounded" required>
+                                <option value="UG">UG</option>
+                                <option value="PG">PG</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Year</label>
+                            <select id="year" name="year" class="w-full p-2 border rounded" required>
+                                <option value="I">I</option>
+                                <option value="II">II</option>
+                                <option value="III">III</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Subject</label>
+                            <input type="text" id="subject" name="subject" class="w-full p-2 border rounded" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Subject Code</label>
+                            <input type="text" id="subject_code" name="subject_code" class="w-full p-2 border rounded" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Course Outcome (CO)</label>
+                            <select id="co" name="co" class="w-full p-2 border rounded" required>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Question</label>
+                            <textarea id="question" name="question" class="w-full p-2 border rounded" required></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Option 1</label>
+                            <input type="text" id="option1" name="option1" class="w-full p-2 border rounded" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Option 2</label>
+                            <input type="text" id="option2" name="option2" class="w-full p-2 border rounded" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Option 3</label>
+                            <input type="text" id="option3" name="option3" class="w-full p-2 border rounded" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Option 4</label>
+                            <input type="text" id="option4" name="option4" class="w-full p-2 border rounded" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block">Correct Answer</label>
+                            <input type="text" id="answer" name="answer" class="w-full p-2 border rounded" required />
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Save</button>
+                        <button type="button" class="mt-2 w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600" onclick="closeModal()">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const editLinks = document.querySelectorAll('.edit-question');
+            const modal = document.getElementById('editModal');
+            const questionIdInput = document.getElementById('questionId');
+            const formFields = modal.querySelectorAll('input, select, textarea');
+            const editForm = document.getElementById('editForm');
+            const deleteButton = document.getElementById('deleteSelectedQuestions');
+
+            editLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const id = this.getAttribute('data-id');
+                    questionIdInput.value = id;
+
+                    // Set form action dynamically to match the route
+                    editForm.action = `/update_question/${id}`;
+
+                    const row = this.closest('tr');
+
+                    const fields = {
+                        'program': row.dataset.program || 'UG',
+                        'year': row.dataset.year || 'I',
+                        'subject': row.cells[1].textContent.trim() !== 'Unknown' ? row.cells[1].textContent.trim() : '',
+                        'subject_code': row.dataset.subjectCode || '',
+                        'co': row.cells[0].textContent.trim() !== 'Not Set' ? row.cells[0].textContent.trim() : '1',
+                        'question': row.cells[2].textContent.trim(),
+                        'option1': row.cells[3].innerHTML.split('<br>')[0]?.replace('1. ', '').trim() || '',
+                        'option2': row.cells[3].innerHTML.split('<br>')[1]?.replace('2. ', '').trim() || '',
+                        'option3': row.cells[3].innerHTML.split('<br>')[2]?.replace('3. ', '').trim() || '',
+                        'option4': row.cells[3].innerHTML.split('<br>')[3]?.replace('4. ', '').trim() || '',
+                        'answer': row.cells[4].textContent.trim() !== 'Not Set' ? row.cells[4].textContent.trim() : ''
+                    };
+
+                    formFields.forEach(field => {
+                        if (field.id in fields) {
+                            if (field.tagName === 'SELECT') {
+                                const optionExists = Array.from(field.options).some(option => option.value === fields[field.id]);
+                                field.value = optionExists ? fields[field.id] : field.options[0].value;
+                            } else {
+                                field.value = fields[field.id];
+                            }
+                        }
+                    });
+
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                });
+            });
+
+            window.closeModal = function() {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            };
+
+            // Handle delete button click
+            deleteButton.addEventListener('click', function() {
+                const subjectCode = document.querySelector('select[name="subject"]').value;
+                if (confirm('Are you sure you want to delete all questions for the selected subject?')) {
+                    fetch(`/delete_selected_questions?subject=${subjectCode}`, {
+                        method: 'POST'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Questions deleted successfully!');
+                            location.reload(); // Refresh the page to reflect changes
+                        } else {
+                            alert('Error deleting questions: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error deleting questions: ' + error);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

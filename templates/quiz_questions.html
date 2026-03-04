@@ -1,0 +1,23 @@
+<!-- Same as your current quiz_start.html but: -->
+<!-- Remove the start card -->
+<!-- Add this in <head> or <body> -->
+<script>
+    // Exit fullscreen on submit
+    document.getElementById('quizForm').addEventListener('submit', function() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    });
+
+    // Auto-submit if try to exit fullscreen with Escape
+    document.addEventListener('fullscreenchange', function() {
+        if (!document.fullscreenElement) {
+            // User exited fullscreen early → auto-submit
+            document.getElementById('quizForm').submit();
+        }
+    });
+</script>

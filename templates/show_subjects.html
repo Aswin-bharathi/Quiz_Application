@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Subjects</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div class="w-64 bg-gray-800 text-white p-4">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="flex-1 p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold">Subjects List</h1>
+                <button id="assignStaffBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Assign Staff</button>
+            </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %} <!-- Correct closing tag -->
+            <form method="GET" class="mb-4 flex space-x-4">
+                <select name="program" class="p-2 border rounded" onchange="this.form.submit()">
+                    <option value="">All Programs</option>
+                    <option value="UG" {% if program == 'UG' %}selected{% endif %}>UG</option>
+                    <option value="PG" {% if program == 'PG' %}selected{% endif %}>PG</option>
+                </select>
+                <select name="year" class="p-2 border rounded" onchange="this.form.submit()">
+                    <option value="">All Years</option>
+                    <option value="I" {% if year == 'I' %}selected{% endif %}>I</option>
+                    <option value="II" {% if year == 'II' %}selected{% endif %}>II</option>
+                    <option value="III" {% if year == 'III' %}selected{% endif %}>III</option>
+                </select>
+            </form>
+            <div class="overflow-y-auto max-h-[calc(100vh-200px)]">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border p-2">Subject Name</th>
+                        <th class="border p-2">Subject Code</th>
+                        <th class="border p-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in subjects %}
+                    <tr>
+                        <td class="border p-2">{{ subject['subject_name'] }}</td>
+                        <td class="border p-2">{{ subject['subject_code'] }}</td>
+                        <td class="border p-2">
+                            <form method="POST" action="{{ url_for('show_subjects') }}" style="display:inline;" class="release-form">
+                                <input type="hidden" name="subject_id" value="{{ subject['id'] }}">
+                                <input type="hidden" name="release_subject" value="1">
+                                <button type="submit" class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600" onclick="return confirm('Are you sure you want to release this subject\'s quiz?')">Release</button>
+                            </form>
+                            <a href="#" class="edit-subject text-blue-500 ml-2" data-id="{{ subject['id'] }}">✏️</a>
+                            <a href="{{ url_for('delete_subject', id=subject['id']) }}" class="text-red-500 hover:underline ml-2" onclick="return confirm('Are you sure you want to delete this subject?')">🗑️</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if not subjects %}
+                <p class="mt-4 text-gray-600">No subjects available yet.</p>
+            {% endif %}
+
+            <!-- Modal for Editing Subject -->
+            <div id="editModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+                <div class="modal-content bg-white p-4 rounded shadow-lg w-96">
+                    <h2 class="text-xl font-bold mb-4">Edit Subject</h2>
+                    <form method="POST" action="{{ url_for('show_subjects') }}">
+                        <input type="hidden" name="subject_id" id="subjectId">
+                        <div class="mb-4">
+                            <label for="subject_name" class="block text-sm font-medium text-gray-700">Subject Name</label>
+                            <input type="text" id="subject_name" name="subject_name" class="mt-1 block w-full p-2 border rounded" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="subject_code" class="block text-sm font-medium text-gray-700">Subject Code</label>
+                            <input type="text" id="subject_code" name="subject_code" class="mt-1 block w-full p-2 border rounded" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Save</button>
+                        <button type="button" class="mt-2 w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600" onclick="closeModal()">Cancel</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal for Department Selection -->
+            {% if show_dept_modal %}
+            <div id="deptModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+                <div class="modal-content bg-white p-4 rounded shadow-lg w-96">
+                    <h2 class="text-xl font-bold mb-4">Select Department</h2>
+                    <form method="POST" action="{{ url_for('show_subjects') }}">
+                        <input type="hidden" name="subject_id" value="{{ subject_id }}">
+                        <input type="hidden" name="release_subject" value="1">
+                        <div class="mb-4">
+                            <label for="student_dept" class="block text-sm font-medium text-gray-700">Department</label>
+                            <select name="student_dept" id="student_dept" class="mt-1 block w-full p-2 border rounded" required>
+                                <option value="">Select Department</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Send to Selected Department</button>
+                        <button type="button" class="mt-2 w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600" onclick="closeDeptModal()">Cancel</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Modal for Assigning Staff -->
+            <div id="assignStaffModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+                <div class="modal-content bg-white p-4 rounded shadow-lg w-96">
+                    <h2 class="text-xl font-bold mb-4">Assign Staff</h2>
+                    <form id="assignStaffForm" method="POST" action="{{ url_for('show_subjects') }}">
+                        <input type="hidden" name="assign_staff" value="1">
+                        <div class="mb-4">
+                            <label for="assign_program" class="block text-sm font-medium text-gray-700">Program</label>
+                            <select id="assign_program" name="program" class="mt-1 block w-full p-2 border rounded" required onchange="fetchSubjects()">
+                                <option value="">Select Program</option>
+                                <option value="UG">UG</option>
+                                <option value="PG">PG</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="assign_year" class="block text-sm font-medium text-gray-700">Year</label>
+                            <select id="assign_year" name="year" class="mt-1 block w-full p-2 border rounded" required onchange="fetchSubjects()">
+                                <option value="">Select Year</option>
+                                <option value="I">I</option>
+                                <option value="II">II</option>
+                                <option value="III">III</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="assign_subject_name" class="block text-sm font-medium text-gray-700">Subject Name</label>
+                            <select id="assign_subject_name" name="subject_name" class="mt-1 block w-full p-2 border rounded" required onchange="fetchSubjectCode()">
+                                <option value="">Select Subject Name</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="assign_subject_code" class="block text-sm font-medium text-gray-700">Subject Code</label>
+                            <select id="assign_subject_code" name="subject_code" class="mt-1 block w-full p-2 border rounded" required>
+                                <option value="">Select Subject Code</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="staff_name" class="block text-sm font-medium text-gray-700">Staff Name</label>
+                            <input type="text" id="staff_name" name="staff_name" class="mt-1 block w-full p-2 border rounded" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="staff_email" class="block text-sm font-medium text-gray-700">Staff Email</label>
+                            <input type="email" id="staff_email" name="staff_email" class="mt-1 block w-full p-2 border rounded" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Assign</button>
+                        <button type="button" class="mt-2 w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600" onclick="closeAssignModal()">Cancel</button>
+                    </form>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editButtons = document.querySelectorAll('.edit-subject');
+        const modal = document.getElementById('editModal');
+        const subjectIdInput = document.getElementById('subjectId');
+        const subjectNameInput = document.getElementById('subject_name');
+        const subjectCodeInput = document.getElementById('subject_code');
+        const deptModal = document.getElementById('deptModal');
+        const assignStaffBtn = document.getElementById('assignStaffBtn');
+        const assignStaffModal = document.getElementById('assignStaffModal');
+        const assignProgram = document.getElementById('assign_program');
+        const assignYear = document.getElementById('assign_year');
+        const assignSubjectName = document.getElementById('assign_subject_name');
+        const assignSubjectCode = document.getElementById('assign_subject_code');
+
+        editButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const id = this.getAttribute('data-id');
+                const row = this.closest('tr');
+                subjectIdInput.value = id;
+                subjectNameInput.value = row.cells[0].textContent.trim();
+                subjectCodeInput.value = row.cells[1].textContent.trim();
+                modal.classList.remove('hidden');
+            });
+        });
+
+        window.closeModal = function() {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+
+        window.closeDeptModal = function() {
+            if (deptModal) {
+                deptModal.style.display = 'none';
+                deptModal.classList.add('hidden');
+            }
+        }
+
+        assignStaffBtn.addEventListener('click', function() {
+            assignStaffModal.classList.remove('hidden');
+        });
+
+        window.closeAssignModal = function() {
+            assignStaffModal.classList.add('hidden');
+            assignSubjectName.innerHTML = '<option value="">Select Subject Name</option>';
+            assignSubjectCode.innerHTML = '<option value="">Select Subject Code</option>';
+        }
+
+        function fetchSubjects() {
+            const program = assignProgram.value;
+            const year = assignYear.value;
+            console.log(`Fetching subjects for program: ${program}, year: ${year}`); // Debug log
+            if (program && year) {
+                fetch(`/get_subjects?program=${program}&year=${year}`)
+                    .then(response => {
+                        console.log('Response status:', response.status); // Debug log
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Fetched data:', data); // Debug log
+                        assignSubjectName.innerHTML = '<option value="">Select Subject Name</option>';
+                        data.forEach(subject => {
+                            const option = document.createElement('option');
+                            option.value = subject.subject_name;
+                            option.text = subject.subject_name;
+                            assignSubjectName.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching subjects:', error));
+            } else {
+                assignSubjectName.innerHTML = '<option value="">Select Subject Name</option>';
+                assignSubjectCode.innerHTML = '<option value="">Select Subject Code</option>';
+            }
+        }
+
+        function fetchSubjectCode() {
+            const selectedSubjectName = assignSubjectName.value;
+            console.log(`Fetching subject code for name: ${selectedSubjectName}`); // Debug log
+            if (selectedSubjectName) {
+                fetch(`/get_subjects?program=${assignProgram.value}&year=${assignYear.value}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Fetched data for code:', data); // Debug log
+                        assignSubjectCode.innerHTML = '<option value="">Select Subject Code</option>';
+                        const subject = data.find(s => s.subject_name === selectedSubjectName);
+                        if (subject) {
+                            const option = document.createElement('option');
+                            option.value = subject.subject_code;
+                            option.text = subject.subject_code;
+                            assignSubjectCode.appendChild(option);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching subject code:', error));
+            } else {
+                assignSubjectCode.innerHTML = '<option value="">Select Subject Code</option>';
+            }
+        }
+
+        // Year options update based on program
+        const programSelect = document.querySelector('select[name="program"]');
+        const yearSelect = document.querySelector('select[name="year"]');
+
+        function updateYearOptions() {
+            const selectedProgram = programSelect.value;
+            const yearOptions = yearSelect.getElementsByTagName('option');
+
+            for (let option of yearOptions) {
+                if (selectedProgram === 'PG') {
+                    if (option.value === 'III') {
+                        option.style.display = 'none';
+                    } else {
+                        option.style.display = 'block';
+                    }
+                } else {
+                    option.style.display = 'block';
+                }
+            }
+
+            if (yearSelect.value === 'III' && selectedProgram === 'PG') {
+                yearSelect.value = '';
+            }
+        }
+
+        updateYearOptions();
+        programSelect.addEventListener('change', updateYearOptions);
+        assignProgram.addEventListener('change', fetchSubjects); // Ensure fetch triggers on change
+        assignYear.addEventListener('change', fetchSubjects);   // Ensure fetch triggers on change
+        assignSubjectName.addEventListener('change', fetchSubjectCode); // Ensure code fetch triggers
+    });
+</script>
+</html>

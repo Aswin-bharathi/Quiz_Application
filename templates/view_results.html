@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const programSelect = document.querySelector('select[name="program"]');
+            const yearSelect = document.querySelector('select[name="year"]');
+            const deptSelect = document.querySelector('select[name="student_dept"]');
+
+            function updateYearOptions() {
+                const selectedProgram = programSelect.value;
+                const yearOptions = yearSelect.getElementsByTagName('option');
+
+                for (let option of yearOptions) {
+                    if (selectedProgram === 'PG') {
+                        if (option.value === 'III') {
+                            option.style.display = 'none';
+                        } else {
+                            option.style.display = 'block';
+                        }
+                    } else {
+                        option.style.display = 'block';
+                    }
+                }
+
+                if (yearSelect.value === 'III' && selectedProgram === 'PG') {
+                    yearSelect.value = '';
+                }
+            }
+
+            updateYearOptions();
+            programSelect.addEventListener('change', updateYearOptions);
+            // Auto-submit form when any dropdown changes
+            programSelect.addEventListener('change', () => document.querySelector('form').submit());
+            yearSelect.addEventListener('change', () => document.querySelector('form').submit());
+            if (deptSelect) {
+                deptSelect.addEventListener('change', () => document.querySelector('form').submit());
+            }
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('form');
+            const tbody = document.getElementById('resultsBody');
+
+            function loadResults() {
+                const params = new URLSearchParams(new FormData(form));
+
+                fetch(`/view_results?${params.toString()}`, {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    tbody.innerHTML = '';
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" class="p-4 text-center text-gray-500">
+                                    No results found
+                                </td>
+                            </tr>`;
+                        return;
+                    }
+
+                    data.forEach(r => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td class="border p-2">${r.roll_no}</td>
+                                <td class="border p-2">${r.name}</td>
+                                <td class="border p-2">${r.co1}</td>
+                                <td class="border p-2">${r.co2}</td>
+                                <td class="border p-2">${r.co3}</td>
+                                <td class="border p-2">${r.co4}</td>
+                                <td class="border p-2">${r.co5}</td>
+                                <td class="border p-2">${r.total}</td>
+                            </tr>
+                        `;
+                    });
+                });
+            }
+
+            // Trigger AJAX on input change
+            form.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('change', loadResults);
+                el.addEventListener('keyup', loadResults);
+            });
+
+            // 🔥 AUTO refresh every 5 sec (student submit panna update varum)
+            setInterval(loadResults, 5000);
+        });
+
+    </script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <div class="fixed left-0 top-0 h-screen w-64 bg-gray-800 text-white p-4 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2"><a href="{{ url_for('add_student') }}" class="block p-2 hover:bg-gray-700 rounded">Add Student</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_students') }}" class="block p-2 hover:bg-gray-700 rounded">Show Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_question') }}" class="block p-2 hover:bg-gray-700 rounded">Add Question</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Show Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('add_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Add Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('show_subjects') }}" class="block p-2 hover:bg-gray-700 rounded">Show Subjects</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_students') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Students</a></li>
+                    <li class="mb-2"><a href="{{ url_for('upload_questions') }}" class="block p-2 hover:bg-gray-700 rounded">Upload Questions</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_entry_code') }}" class="block p-2 hover:bg-gray-700 rounded">Set Entry Code</a></li>
+                    <li class="mb-2"><a href="{{ url_for('set_quiz_subject') }}" class="block p-2 hover:bg-gray-700 rounded">Set Quiz Subject</a></li>
+                    <li class="mb-2"><a href="{{ url_for('view_results') }}" class="block p-2 hover:bg-gray-700 rounded">View Results</a></li>
+                    <li class="mb-2"><a href="{{ url_for('reset_quiz') }}" class="block p-2 hover:bg-gray-700 rounded">Reset Quiz</a></li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('admin_logout') }}" class="block p-2 text-red-600 hover:text-red-700 rounded flex items-center" 
+                           onclick="return confirm('Are you sure you want to logout?')">
+                            <span class="mr-2">⏻</span> Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="flex-1 p-8 ml-64">
+            <h1 class="text-3xl font-bold mb-6">Quiz Results</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <form method="GET" class="mb-4 flex space-x-4">
+                <input type="text" name="search" value="{{ search }}" placeholder="Search by name or roll number" class="p-2 border rounded">
+                <select name="program" class="p-2 border rounded">
+                    <option value="">All Programs</option>
+                    <option value="UG" {% if program == 'UG' %}selected{% endif %}>UG</option>
+                    <option value="PG" {% if program == 'PG' %}selected{% endif %}>PG</option>
+                </select>
+                <select name="year" class="p-2 border rounded">
+                    <option value="">All Years</option>
+                    <option value="I" {% if year == 'I' %}selected{% endif %}>I</option>
+                    <option value="II" {% if year == 'II' %}selected{% endif %}>II</option>
+                    <option value="III" {% if year == 'III' %}selected{% endif %}>III</option>
+                </select>
+                {% if departments %}
+                <select name="student_dept" class="p-2 border rounded">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept }}" {% if department == dept %}selected{% endif %}>{{ dept }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                <a href="{{ url_for('view_results', format='excel', search=search, program=program, year=year, student_dept=department) }}" class="bg-green-500 text-white p-2 rounded hover:bg-green-600">Download Excel</a>
+                <a href="{{ url_for('view_results', format='pdf', search=search, program=program, year=year, student_dept=department) }}" class="bg-red-500 text-white p-2 rounded hover:bg-red-600">Download PDF</a>
+            </form>
+            <div class="max-h-[600px] overflow-y-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200 sticky top-0">
+                            <th class="border p-2">Roll Number</th>
+                            <th class="border p-2">Student Name</th>
+                            <th class="border p-2">CO1</th>
+                            <th class="border p-2">CO2</th>
+                            <th class="border p-2">CO3</th>
+                            <th class="border p-2">CO4</th>
+                            <th class="border p-2">CO5</th>
+                            <th class="border p-2">Total Mark</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        {% for result in results %}
+                        <tr>
+                            <td class="border p-2">{{ result.student_roll_no }}</td>
+                            <td class="border p-2">{{ result.name }}</td>
+                            <td class="border p-2">{{ '-' if result.quiz_status.lower() == 'not_attempted' or not result.subject_code else result.co1_score }}</td>
+                            <td class="border p-2">{{ '-' if result.quiz_status.lower() == 'not_attempted' or not result.subject_code else result.co2_score }}</td>
+                            <td class="border p-2">{{ '-' if result.quiz_status.lower() == 'not_attempted' or not result.subject_code else result.co3_score }}</td>
+                            <td class="border p-2">{{ '-' if result.quiz_status.lower() == 'not_attempted' or not result.subject_code else result.co4_score }}</td>
+                            <td class="border p-2">{{ '-' if result.quiz_status.lower() == 'not_attempted' or not result.subject_code else result.co5_score }}</td>
+                            <td class="border p-2">{{ '-' if result.quiz_status.lower() == 'not_attempted' or not result.subject_code else result.total_mark }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if not results %}
+                <p class="mt-4 text-gray-600">No results available yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
