@@ -1,7 +1,7 @@
 {
   "name": "Quiz Application",
   "short_name": "QuizApp",
-  "start_url": "/",
+  "start_url": "/admin_login",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2c3e50",
