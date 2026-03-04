@@ -324,7 +324,7 @@ def show_students():
     departments = [row['student_dept'] for row in c.fetchall()]
     
     # Main query for students
-    query = 'SELECT id, roll_no, name, active_status, program, year, quiz_status FROM students'
+    query = 'SELECT id, roll_no, name, active_status, program, year, quiz_status, student_dept FROM students'
     params = []
     
     conditions = []
