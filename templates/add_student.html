@@ -113,6 +113,12 @@
 
         // Trigger on page load to set initial state based on default/selected program
         document.addEventListener('DOMContentLoaded', updateYearOptions);
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/static/sw.js")
+            .then(function() {
+              console.log("Service Worker Registered");
+            });
+        }
     </script>
 </body>
 </html>
