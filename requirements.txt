@@ -1,8 +1,8 @@
 Flask
-mysql-connector-python
+psycopg2-binary
 pandas
 xlsxwriter
 reportlab
 python-dotenv
 gunicorn
-openpyxl
+Werkzeug

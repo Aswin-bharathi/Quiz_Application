@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, make_response,send_file
-import mysql.connector
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import pandas as pd
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,13 +15,11 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
-import pandas as pd
 import io
 from email.mime.application import MIMEApplication
 from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
-import os
 
 load_dotenv(dotenv_path=".env")
 app = Flask(__name__)   # 🔥 FIRST create app
@@ -32,8 +31,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Create folder if not exists
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -41,24 +39,24 @@ def allowed_file(filename):
 
 
 
-app.secret_key = 'your-secret-key'  # Replace with secure key in production
+app.secret_key = os.getenv("SECRET_KEY")  # Replace with secure key in production
 
-# MySQL Configuration
-MYSQL_CONFIG = {
-    "host": os.getenv("MYSQL_HOST"),
-    "user": os.getenv("MYSQL_USER"),
-    "password": os.getenv("MYSQL_PASSWORD"),
-    "database": os.getenv("MYSQL_DATABASE")
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST"),
+    "database": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "port": os.getenv("DB_PORT")
 }
 
-# Function to get MySQL connection
+# Function to get PostgreSQL connection
 def get_db_connection():
     try:
-        conn = mysql.connector.connect(**MYSQL_CONFIG)
+        conn = psycopg2.connect(**DB_CONFIG)
         conn.autocommit = False  # Enable manual commit for transactions
         return conn
-    except mysql.connector.Error as err:
-        print(f"Error connecting to MySQL: {err}")
+    except psycopg2.Error as err:
+        print(f"Error connecting to PostgreSQL: {err}")
         raise
 
 # Database initialization
@@ -66,54 +64,59 @@ def init_db():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # Enable foreign key support
-    c.execute("SET FOREIGN_KEY_CHECKS = 1")
-
     # 1. students table
     c.execute('''CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         roll_no VARCHAR(50) UNIQUE NOT NULL,
-        program ENUM('UG', 'PG') NOT NULL,
-        year ENUM('I', 'II', 'III') NOT NULL,
-        quiz_status VARCHAR(50) DEFAULT 'not_attempted'
+        program VARCHAR(10) NOT NULL,
+        year VARCHAR(10) NOT NULL,
+        quiz_status VARCHAR(50) DEFAULT 'not_attempted',
+        student_dept VARCHAR(100),
+        student_email VARCHAR(255),
+        active_status VARCHAR(10) DEFAULT 'ON'
     )''')
 
     # 2. subjects table
     c.execute('''CREATE TABLE IF NOT EXISTS subjects (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         subject_code VARCHAR(50) UNIQUE NOT NULL,
         subject_name VARCHAR(255) NOT NULL,
-        program ENUM('UG', 'PG') NOT NULL,
-        year ENUM('I', 'II', 'III') NOT NULL
+        program VARCHAR(10) NOT NULL,
+        year VARCHAR(10) NOT NULL
     )''')
 
     # 3. questions table
     c.execute('''CREATE TABLE IF NOT EXISTS questions (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        program ENUM('UG', 'PG') NOT NULL,
-        year ENUM('I', 'II', 'III') NOT NULL,
+        id SERIAL PRIMARY KEY,
+        program VARCHAR(10) NOT NULL,
+        year VARCHAR(10) NOT NULL,
         subject VARCHAR(255) NOT NULL,
         subject_code VARCHAR(50) NOT NULL,
         co VARCHAR(50),
-        question TEXT NOT NULL,
-        option1 TEXT NOT NULL,
-        option2 TEXT NOT NULL,
-        option3 TEXT NOT NULL,
-        option4 TEXT NOT NULL,
-        answer TEXT NOT NULL,
+        question TEXT,
+        option1 TEXT,
+        option2 TEXT,
+        option3 TEXT,
+        option4 TEXT,
+        answer TEXT,
+        image_path TEXT,
+        option1_image TEXT,
+        option2_image TEXT,
+        option3_image TEXT,
+        option4_image TEXT,
         FOREIGN KEY (subject_code) REFERENCES subjects(subject_code) ON DELETE CASCADE
     )''')
 
     # 4. quiz_entries table
     c.execute('''CREATE TABLE IF NOT EXISTS quiz_entries (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         entry_code VARCHAR(50) UNIQUE NOT NULL
     )''')
 
     # 5. results table
     c.execute('''CREATE TABLE IF NOT EXISTS results (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         student_roll_no VARCHAR(50) NOT NULL,
         subject_code VARCHAR(50) NOT NULL,
         score INTEGER NOT NULL,
@@ -128,23 +131,23 @@ def init_db():
 
     # 6. admins table
     c.execute('''CREATE TABLE IF NOT EXISTS admins (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL
     )''')
 
     # 7. quiz_access table
     c.execute('''CREATE TABLE IF NOT EXISTS quiz_access (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        program ENUM('UG', 'PG') NOT NULL,
-        year ENUM('I', 'II', 'III') NOT NULL,
+        id SERIAL PRIMARY KEY,
+        program VARCHAR(10) NOT NULL,
+        year VARCHAR(10) NOT NULL,
         allowed_subject_code VARCHAR(50) NOT NULL,
         FOREIGN KEY (allowed_subject_code) REFERENCES subjects(subject_code) ON DELETE CASCADE
     )''')
 
     # 8. student_answers table
     c.execute('''CREATE TABLE IF NOT EXISTS student_answers (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         student_roll_no VARCHAR(50) NOT NULL,
         question_id INTEGER NOT NULL,
         is_correct INTEGER,
@@ -152,10 +155,18 @@ def init_db():
         FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS staff (
+        id SERIAL PRIMARY KEY,
+        staff_name VARCHAR(255),
+        email VARCHAR(255),
+        subject_code VARCHAR(50),
+        FOREIGN KEY (subject_code) REFERENCES subjects(subject_code) ON DELETE CASCADE
+    )''')
+
     # Insert default admin
     default_admin = 'admin'
     default_password = generate_password_hash('admin@123#')  # Change in production
-    c.execute('INSERT IGNORE INTO admins (username, password) VALUES (%s, %s)',
+    c.execute('INSERT INTO admins (username,password)VALUES (%s,%s)ON CONFLICT (username) DO NOTHING',
               (default_admin, default_password))
 
     conn.commit()
@@ -164,14 +175,13 @@ def init_db():
 # Initialize database
 init_db()
 
-# Admin login required decorator
 def admin_login_required(f):
+    @wraps(f)
     def wrap(*args, **kwargs):
         if 'admin' not in session:
             flash('Please login as admin first!', 'error')
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
-    wrap.__name__ = f.__name__
     return wrap
 # @app.route('/')
 # def index():
@@ -184,7 +194,7 @@ def admin_login():
         password = request.form['password']
         
         conn = get_db_connection()
-        c = conn.cursor(dictionary=True)
+        c = conn.cursor(cursor_factory=RealDictCursor)
         c.execute('SELECT * FROM admins WHERE username = %s', (username,))
         admin = c.fetchone()
         conn.close()
@@ -223,7 +233,7 @@ def add_student():
                                       (roll_no,name, program, year, 'not_attempted',dept,mail))
             conn.commit()
             flash('Student added successfully!', 'success')
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             flash(f'Error: Roll number already exists or invalid data! {str(err)}', 'error')
         finally:
             conn.close()
@@ -235,7 +245,7 @@ def add_student():
 @admin_login_required
 def update_student(id):
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)  # returns dict instead of tuple
+    c = conn.cursor(cursor_factory=RealDictCursor)  # returns dict instead of tuple
 
     if request.method == 'POST':
         name = request.form['name']
@@ -264,7 +274,7 @@ def update_student(id):
 
             flash('Student updated successfully!', 'success')
 
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             flash(f'Error: Roll number already exists or invalid data! {str(err)}', 'error')
         finally:
             conn.close()
@@ -292,7 +302,7 @@ def delete_student(id):
         c.execute('DELETE FROM students WHERE id = %s', (id,))
         conn.commit()
         flash('Student deleted successfully!', 'success')
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f'Error deleting student: {str(err)}', 'error')
     finally:
         conn.close()
@@ -307,7 +317,7 @@ def show_students():
     department = request.args.get('student_dept', '')
     
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     # Fetch distinct departments for dropdown
     c.execute('SELECT DISTINCT student_dept FROM students WHERE student_dept IS NOT NULL AND student_dept != ""')
@@ -334,7 +344,7 @@ def show_students():
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
     
-    query += ' ORDER BY program ASC, year ASC, CAST(SUBSTR(roll_no, -3) AS SIGNED) ASC'
+    query += ' ORDER BY program ASC, year ASC, roll_no ASC'
     
     c.execute(query, params)
     students = c.fetchall()
@@ -353,7 +363,7 @@ def show_students():
 @app.route('/delete_selected_students', methods=['POST'])
 @admin_login_required
 def delete_selected_students():
-    conn = mysql.connector.connect(**MYSQL_CONFIG)
+    conn = get_db_connection()
     c = conn.cursor()
 
     # Get form data
@@ -379,7 +389,7 @@ def delete_selected_students():
         conn.commit()
         deleted_count = c.rowcount
         return jsonify({'success': True, 'message': f'Deleted {deleted_count} student(s)'})
-    except mysql.connector.Error as e:
+    except psycopg2.Error as e:
         conn.rollback()
         return jsonify({'success': False, 'error': str(e)})
     finally:
@@ -390,7 +400,7 @@ def delete_selected_students():
 def toggle_student_status(id):
     try:
         conn = get_db_connection()
-        c = conn.cursor(dictionary=True)
+        c = conn.cursor(cursor_factory=RealDictCursor)
         c.execute('SELECT active_status FROM students WHERE id = %s', (id,))
         student = c.fetchone()
         if not student:
@@ -400,7 +410,7 @@ def toggle_student_status(id):
         conn.commit()
         conn.close()
         return jsonify({'success': True, 'new_status': new_status})
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         conn.close()
         return jsonify({'error': str(err)}), 500
     
@@ -409,7 +419,7 @@ def toggle_student_status(id):
 @admin_login_required
 def add_question():
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     program = request.args.get('program', '')
     year = request.args.get('year', '')
@@ -464,7 +474,7 @@ def add_question():
             """, (program, year, subject, subject_code, co, question, option1, option2, option3, option4, answer))
             conn.commit()
             flash('✅ Question added successfully!', 'success')
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             flash(f'Error adding question: {str(err)}', 'error')
         finally:
             conn.close()
@@ -481,7 +491,7 @@ def show_questions():
     subject_filter = request.args.get('subject', '')
 
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     # Fetch subjects that have at least one question for the dropdown
     c.execute("""
@@ -536,7 +546,7 @@ def delete_selected_questions():
         deleted_count = c.rowcount
         conn.close()
         return jsonify({'success': True, 'message': f'Deleted {deleted_count} question(s)'})
-    except mysql.connector.Error as e:
+    except psycopg2.Error as e:
         conn.rollback()
         conn.close()
         return jsonify({'success': False, 'error': str(e)})
@@ -546,7 +556,7 @@ def delete_selected_questions():
 def update_question(question_id):
 
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     if request.method == 'POST':
 
@@ -641,7 +651,7 @@ def delete_question(question_id):
         c.execute("DELETE FROM questions WHERE id = %s", (question_id,))
         conn.commit()
         flash("Question deleted successfully!", "success")
-    except mysql.connector.Error as e:
+    except psycopg2.Error as e:
         conn.rollback()
         flash(f"Error deleting question: {str(e)}", "error")
     
@@ -669,7 +679,7 @@ def add_subject():
                       (subject_name, subject_code, program, year))
             conn.commit()
             flash('Subject added successfully!', 'success')
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             flash(f'Error: Subject code already exists! {str(err)}', 'error')
         finally:
             conn.close()
@@ -680,8 +690,8 @@ def add_subject():
 @app.route('/show_subjects', methods=['GET', 'POST'])
 @admin_login_required
 def show_subjects():
-    conn = mysql.connector.connect(**MYSQL_CONFIG)
-    c = conn.cursor(dictionary=True)
+    conn = get_db_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     program = request.args.get('program', '')
     year = request.args.get('year', '')
@@ -826,7 +836,7 @@ def show_subjects():
                           (staff_name, staff_email, subject_code))
                 conn.commit()
                 flash('Staff assigned successfully!', 'success')
-            except mysql.connector.Error as err:
+            except psycopg2.Error as err:
                 conn.rollback()
                 flash(f'Error assigning staff: {str(err)}', 'error')
             return redirect(url_for('show_subjects', program=program, year=year))
@@ -839,7 +849,7 @@ def show_subjects():
                       (subject_name, subject_code, subject_id))
             conn.commit()
             flash('Subject updated successfully!', 'success')
-        except mysql.connector.Error as e:
+        except psycopg2.Error as e:
             conn.rollback()
             flash(f'Error updating subject: {str(e)}', 'error')
         return redirect(url_for('show_subjects', program=program, year=year))
@@ -850,8 +860,8 @@ def show_subjects():
 @app.route('/get_subjects', methods=['GET'])
 @admin_login_required
 def get_subjects():
-    conn = mysql.connector.connect(**MYSQL_CONFIG)
-    c = conn.cursor(dictionary=True)
+    conn = get_db_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     program = request.args.get('program', '')
     year = request.args.get('year', '')
@@ -882,7 +892,7 @@ def delete_subject(id):
         c.execute('DELETE FROM subjects WHERE id = %s', (id,))
         conn.commit()
         flash('Subject deleted successfully!', 'success')
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         flash(f'Error deleting subject: {str(err)}', 'error')
     finally:
         conn.close()
@@ -890,8 +900,8 @@ def delete_subject(id):
 @app.route('/download_and_reset', methods=['POST'])
 def download_and_reset():
     try:
-        conn = mysql.connector.connect(**MYSQL_CONFIG)
-        cursor = conn.cursor(dictionary=True)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         # Fetch student results
         cursor.execute("SELECT * FROM results")
@@ -908,8 +918,8 @@ def download_and_reset():
 
         # Reset quiz_status column to 'not_attempted'
         cursor.execute("UPDATE students SET quiz_status = %s, active_status = %s", ('not_attempted', 'ON'))
-        cursor.execute("truncate table results")
-        cursor.execute("truncate table student_answers")
+        cursor.execute("TRUNCATE TABLE results RESTART IDENTITY CASCADE;")
+        cursor.execute("TRUNCATE TABLE student_answers RESTART IDENTITY CASCADE;")
         conn.commit()
 
         cursor.close()
@@ -935,7 +945,7 @@ def reset_quiz():
 @admin_login_required
 def upload_students():
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     program = request.args.get('program', '')
     year = request.args.get('year', '')
@@ -969,7 +979,7 @@ def upload_students():
                         try:
                             c.execute('INSERT INTO students (roll_no, name, program, year, quiz_status,student_dept,student_email) VALUES (%s, %s, %s, %s,%s,%s,%s)',
                                       (row['roll_no'], row['name'], selected_program, selected_year, 'not_attempted',row['student_dept'],row['student_mail']))
-                        except mysql.connector.Error:
+                        except psycopg2.Error:
                             continue  # Skip duplicate roll numbers or invalid emails
                     conn.commit()
                     flash('Students uploaded successfully!', 'success')
@@ -989,8 +999,8 @@ def upload_students():
 @admin_login_required
 def upload_questions():
 
-    conn = mysql.connector.connect(**MYSQL_CONFIG)
-    c = conn.cursor(dictionary=True)
+    conn = get_db_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     program = request.args.get('program', '')
     year = request.args.get('year', '')
@@ -1197,7 +1207,7 @@ def set_entry_code():
             c.execute('INSERT INTO quiz_entries (entry_code) VALUES (%s)', (entry_code,))
             conn.commit()
             flash('Entry code set successfully!', 'success')
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             flash(f'Error setting entry code: {str(err)}', 'error')
         finally:
             conn.close()
@@ -1209,7 +1219,7 @@ def set_entry_code():
 def view_results():
 
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
     search = request.args.get('search', '')
     program = request.args.get('program', '')
     year = request.args.get('year', '')
@@ -1437,8 +1447,6 @@ def view_results():
         # Send PDF to staff email
         sender_email = os.getenv("GMAIL_USER")
         sender_password = os.getenv("GMAIL_APP_PASSWORD")
-        print(os.getenv("GMAIL_USER"))
-        print(os.getenv("GMAIL_APP_PASSWORD"))
         if subject_code != "N/A":
             c.execute('SELECT email FROM staff WHERE subject_code = %s', (subject_code,))
             staff = c.fetchone()
@@ -1514,7 +1522,7 @@ def set_quiz_subject():
                     conn.commit()
                     flash(f'{subject_code} access granted!', 'success')
 
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             flash(f'Error updating quiz subject: {str(err)}', 'error')
         finally:
             conn.close()
@@ -1522,7 +1530,7 @@ def set_quiz_subject():
         return redirect(url_for('set_quiz_subject'))
 
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
     c.execute('SELECT program, year, subject_code FROM subjects')
     subject_options = c.fetchall()
 
@@ -1543,7 +1551,7 @@ def quiz_login():
         entry_code = request.form['entry_code']
 
         conn = get_db_connection()
-        c = conn.cursor(dictionary=True)
+        c = conn.cursor(cursor_factory=RealDictCursor)
 
         c.execute('SELECT * FROM students WHERE roll_no = %s', (roll_no,))
         student = c.fetchone()
@@ -1626,7 +1634,7 @@ def quiz_start():
         return redirect(url_for('quiz_login'))
 
     conn = get_db_connection()
-    c = conn.cursor(dictionary=True)
+    c = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
         roll_no = session['student']['roll_no']
@@ -1828,4 +1836,5 @@ def alter_student_year():
 
 if __name__ == '__main__':
     print("Starting Flask server...")
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
